@@ -39,13 +39,21 @@ def download(url, variables):
         frames.append(get_year(url, variables, year))
     return pd.concat(frames, ignore_index = True)
 
-if __name__=="__main__":
+if __name__ == "__main__":
     print("Downloading air quality...")
     air = download(AIR_URL, AIR_VARS)
     print("Downloading weather...")
     weather = download(WEATHER_URL, WEATHER_VARS)
 
-    df = air.merge(weather, on="time")
-    Path("data").mkdir(exist_ok = True)
+    air["time"] = pd.to_datetime(air["time"])
+    weather["time"] = pd.to_datetime(weather["time"])
+    df = air.merge(weather, on="time", how="inner")
+
+    missing = df.isna().sum()
+    if missing.any():
+        print("Warning, missing values found:")
+        print(missing[missing > 0])
+
+    Path("data").mkdir(exist_ok=True)
     df.to_csv("data/thessaloniki_hourly.csv", index=False)
-    print(f"Saved{len(df):,}rows to data/thessaloniki_hourly.csv")
+    print(f"Saved {len(df):,} rows to data/thessaloniki_hourly.csv")
